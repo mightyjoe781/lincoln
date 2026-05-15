@@ -26,8 +26,8 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY . .
 
 RUN adduser --disabled-password --no-create-home appuser && \
-    mkdir -p /tmp/lincoln_uploads && \
-    chown appuser /tmp/lincoln_uploads
+    mkdir -p /uploads && \
+    chown appuser /uploads
 
 USER appuser
 
