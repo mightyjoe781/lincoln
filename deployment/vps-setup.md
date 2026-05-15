@@ -7,7 +7,7 @@ Assumes: Ubuntu/Debian VPS, Docker + Docker Compose installed, nginx running, yo
 ## Directory Layout on VPS
 
 ```
-/opt/lincoln/
+/opt/docker/lincoln/
 ├── .env                          # secrets — never commit this
 ├── deployment/
 │   ├── docker-compose.vps.yml    # the compose file to use
@@ -19,15 +19,15 @@ Assumes: Ubuntu/Debian VPS, Docker + Docker Compose installed, nginx running, yo
 ## Step 1 — Clone the Repo
 
 ```bash
-git clone https://github.com/mightyjoe781/lincoln.git /opt/lincoln
-cd /opt/lincoln
+git clone https://github.com/mightyjoe781/lincoln.git /opt/docker/lincoln
+cd /opt/docker/lincoln
 ```
 
 ---
 
 ## Step 2 — Create `.env`
 
-The `.env` file lives at the **project root** (`/opt/lincoln/.env`), one level above `deployment/`. The compose file references it as `env_file: ../.env`.
+The `.env` file lives at the **project root** (`/opt/docker/lincoln/.env`), one level above `deployment/`. The compose file references it as `env_file: ../.env`.
 
 ```bash
 cp .env.example .env
@@ -69,13 +69,13 @@ POSTGRES_DB=lincoln
 
 # ── Runtime ──────────────────────────────────────────────────────────────────
 ENVIRONMENT=production
-HOST_NAME=sudomoon-vps             # used in Prometheus/Grafana labels
+HOST_NAME=sudomoon-vps             # used in Prometheus/Grafana labels — defaults to "vps" if unset
 ```
 
 Set restrictive permissions — this file contains secrets:
 
 ```bash
-chmod 600 /opt/lincoln/.env
+chmod 600 /opt/docker/lincoln/.env
 ```
 
 ---
@@ -83,7 +83,7 @@ chmod 600 /opt/lincoln/.env
 ## Step 3 — Build the Image
 
 ```bash
-cd /opt/lincoln
+cd /opt/docker/lincoln
 docker build -t lincoln:latest .
 ```
 
@@ -91,8 +91,11 @@ docker build -t lincoln:latest .
 
 ## Step 4 — Start Lincoln
 
+**Always run from the project root** — Docker Compose resolves `.env` variable substitution from the current working directory, not from where the compose file is. Running from `deployment/` means `POSTGRES_PASSWORD` and other vars won't be interpolated.
+
 ```bash
-docker compose -f /opt/lincoln/deployment/docker-compose.vps.yml up -d
+cd /opt/docker/lincoln
+docker compose -f deployment/docker-compose.vps.yml --env-file .env up -d
 ```
 
 Check startup logs (migrations + seed run before uvicorn):
@@ -196,13 +199,13 @@ docker logs lincoln-app -f
 docker logs lincoln-worker -f
 
 # Restart a service (e.g. after .env change)
-docker compose -f /opt/lincoln/deployment/docker-compose.vps.yml restart lincoln-app
+docker compose -f /opt/docker/lincoln/deployment/docker-compose.vps.yml --env-file /opt/docker/lincoln/.env restart lincoln-app
 
 # Pull latest code and redeploy
-cd /opt/lincoln
+cd /opt/docker/lincoln
 git pull
 docker build -t lincoln:latest .
-docker compose -f /opt/lincoln/deployment/docker-compose.vps.yml up -d --no-deps lincoln-app lincoln-worker
+docker compose -f /opt/docker/lincoln/deployment/docker-compose.vps.yml --env-file /opt/docker/lincoln/.env up -d --no-deps lincoln-app lincoln-worker
 
 # Run a one-off migration (if needed outside normal boot)
 docker exec lincoln-app alembic upgrade head
@@ -211,10 +214,10 @@ docker exec lincoln-app alembic upgrade head
 docker exec -it lincoln-db psql -U lincoln -d lincoln
 
 # Stop everything
-docker compose -f /opt/lincoln/deployment/docker-compose.vps.yml down
+docker compose -f /opt/docker/lincoln/deployment/docker-compose.vps.yml --env-file /opt/docker/lincoln/.env down
 
 # Full teardown including volumes (DESTRUCTIVE — deletes all data)
-docker compose -f /opt/lincoln/deployment/docker-compose.vps.yml down -v
+docker compose -f /opt/docker/lincoln/deployment/docker-compose.vps.yml --env-file /opt/docker/lincoln/.env down -v
 ```
 
 ---
@@ -222,12 +225,12 @@ docker compose -f /opt/lincoln/deployment/docker-compose.vps.yml down -v
 ## Updating Lincoln
 
 ```bash
-cd /opt/lincoln
+cd /opt/docker/lincoln
 git pull
 docker build -t lincoln:latest .
 
 # Rolling restart — DB and Redis stay up, only app + worker restart
-docker compose -f /opt/lincoln/deployment/docker-compose.vps.yml up -d --no-deps lincoln-app lincoln-worker
+docker compose -f /opt/docker/lincoln/deployment/docker-compose.vps.yml --env-file /opt/docker/lincoln/.env up -d --no-deps lincoln-app lincoln-worker
 ```
 
 Migrations run automatically on `lincoln-app` startup before uvicorn starts.

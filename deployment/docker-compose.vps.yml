@@ -1,8 +1,12 @@
 # Lincoln — VPS deployment compose
 #
-# Usage:
-#   cp .env.example .env   # fill in secrets
-#   docker compose -f deployment/docker-compose.vps.yml up -d
+# Usage (always run from the PROJECT ROOT, not from deployment/):
+#   cd /opt/docker/lincoln
+#   docker compose -f deployment/docker-compose.vps.yml --env-file .env up -d
+#
+# The --env-file flag is required when running the compose file from a
+# subdirectory — Docker Compose looks for .env in the current working
+# directory, not relative to the compose file location.
 #
 # Nginx → 127.0.0.1:13006 → lincoln-app:8000
 # Prometheus (monitoring network) → lincoln-app:8000/metrics
