@@ -262,12 +262,3 @@ docker compose up -d --build
 
 Point your existing Prometheus instance at `http://<host>:8000/metrics` to scrape metrics into your existing Grafana dashboards.
 
----
-
-## Known Limitations
-
-- PDF parsing is regex-based and works best on text-layer PDFs (not scanned images)
-- CSV parser requires at minimum `date`, `description`, and `amount` columns — flexible column aliases are supported
-- File uploads are stored on the local filesystem; swap `LocalFileStorage` for an S3 adapter for multi-replica deployments
-- JWT tokens are stateless — there is no token revocation (logout invalidates the client-side token only)
-- Celery tasks have no retry UI — failed documents show `status: failed` with an `error_message`; re-upload the file to retry
