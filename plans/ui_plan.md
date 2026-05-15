@@ -136,41 +136,41 @@ Filter: [Description ________] [From ____] [To ____] [Currency ___] [Apply]
 ## Implementation Tasks
 
 ### Phase UI-0 — Scaffold
-- [ ] Create `ui/index.html` with Tailwind CDN, three tab buttons, tab panel containers
-- [ ] `ui/app.js` — tab switching logic, `API_BASE = "/api/v1"` constant
-- [ ] Mount `StaticFiles` in `app/main.py` (add `python-multipart` already present, add `aiofiles` already present)
+- [x] Create `ui/index.html` with Tailwind CDN, three tab buttons, tab panel containers
+- [x] `ui/app.js` — tab switching logic, `API_BASE = "/api/v1"` constant
+- [x] Mount `StaticFiles` in `app/main.py` (add `python-multipart` already present, add `aiofiles` already present)
 - [ ] Verify `GET /` serves the page
 
 ### Phase UI-1 — Upload Tab
-- [ ] Drag-and-drop zone (dragover / drop events, highlight on drag)
-- [ ] File input fallback (`<input type="file" accept=".pdf,.csv">`)
-- [ ] `uploadFile(file)` — `FormData` + `fetch POST /api/v1/documents/upload`
-- [ ] Response handling: 201 (new), 200 (duplicate), 413 (too large), 422 (wrong type)
-- [ ] Toast notification component (auto-dismiss 4 s)
-- [ ] `pollStatus(documentId)` — `setInterval` 2 s, clears when `done`/`failed`
-- [ ] Render recent uploads table from `GET /api/v1/documents`
-- [ ] Delete button → `DELETE /api/v1/documents/{id}`, remove row
+- [x] Drag-and-drop zone (dragover / drop events, highlight on drag)
+- [x] File input fallback (`<input type="file" accept=".pdf,.csv">`)
+- [x] `uploadFile(file)` — `FormData` + `fetch POST /api/v1/documents/upload`
+- [x] Response handling: 201 (new), 200 (duplicate), 413 (too large), 422 (wrong type)
+- [x] Toast notification component (auto-dismiss 4 s)
+- [x] `pollStatus(documentId)` — `setInterval` 2 s, clears when `done`/`failed`
+- [x] Render recent uploads table from `GET /api/v1/documents`
+- [x] Delete button → `DELETE /api/v1/documents/{id}`, remove row
 
 ### Phase UI-2 — Invoices Tab
-- [ ] `fetchInvoices(params)` — builds query string from filter state, fetches, renders table
-- [ ] Filter form with vendor, date_from, date_to, currency inputs
-- [ ] Pagination controls (prev/next, page indicator)
-- [ ] Detail panel: slide-in `<aside>`, populated from `GET /api/v1/invoices/{id}`
-- [ ] Line items nested table inside detail panel
-- [ ] Close panel on Escape or backdrop click
+- [x] `fetchInvoices(params)` — builds query string from filter state, fetches, renders table
+- [x] Filter form with vendor, date_from, date_to, currency inputs
+- [x] Pagination controls (prev/next, page indicator)
+- [x] Detail panel: slide-in `<aside>`, populated from `GET /api/v1/invoices/{id}`
+- [x] Line items nested table inside detail panel
+- [x] Close panel on Escape or backdrop click
 
 ### Phase UI-3 — Transactions Tab
-- [ ] `fetchTransactions(params)` — same pattern as invoices
-- [ ] Filter form (description, date range, currency)
-- [ ] Debit/credit colour coding
-- [ ] Pagination controls
+- [x] `fetchTransactions(params)` — same pattern as invoices
+- [x] Filter form (description, date range, currency)
+- [x] Debit/credit colour coding
+- [x] Pagination controls
 
 ### Phase UI-4 — Polish
-- [ ] Loading skeleton rows while fetching (prevents layout shift)
-- [ ] Empty state illustrations (simple SVG or text)
-- [ ] Responsive: single-column on narrow viewports
-- [ ] Favicon (simple `L` letter)
-- [ ] Page title: "Lincoln — Financial Document Parser"
+- [x] Loading skeleton rows while fetching (prevents layout shift)
+- [x] Empty state illustrations (simple SVG or text)
+- [x] Responsive: single-column on narrow viewports
+- [x] Favicon (simple `L` letter)
+- [x] Page title: "Lincoln — Financial Document Parser"
 
 ---
 
