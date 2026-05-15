@@ -1,6 +1,6 @@
 import hashlib
 import uuid
-from typing import Annotated, Optional
+from typing import List
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy import func, select
@@ -10,7 +10,12 @@ from app.api.deps import get_current_user, get_db
 from app.db.models.user import User
 from app.core.config import settings
 from app.db.models.document import Document
-from app.schemas.document import DocumentListResponse, DocumentResponse
+from app.schemas.document import (
+    DocumentBatchUploadResponse,
+    DocumentListResponse,
+    DocumentResponse,
+    DocumentUploadResult,
+)
 from app.services.document_service import DocumentService
 from app.core.limiter import limiter
 from app.storage.local import LocalFileStorage
@@ -22,40 +27,56 @@ def get_storage() -> LocalFileStorage:
     return LocalFileStorage(settings.upload_dir)
 
 
-@router.post("/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit("10/minute")
+@router.post("/upload", response_model=DocumentBatchUploadResponse, status_code=status.HTTP_200_OK)
+@limiter.limit("30/minute")
 async def upload_document(
     request: Request,
-    file: UploadFile = File(...),
+    files: List[UploadFile] = File(...),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if file.content_type not in settings.allowed_mime_types:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Unsupported file type: {file.content_type}. Allowed: {settings.allowed_mime_types}",
-        )
-
-    file_bytes = await file.read()
-
-    if len(file_bytes) > settings.max_upload_size_bytes:
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File too large. Max size: {settings.max_upload_size_bytes} bytes",
-        )
-
-    checksum = hashlib.sha256(file_bytes).hexdigest()
-    existing = await db.scalar(select(Document).where(Document.checksum == checksum))
-
     svc = DocumentService(db, get_storage())
-    mime = file.content_type or "application/octet-stream"
+    results: list[DocumentUploadResult] = []
 
-    if existing:
-        return DocumentResponse.model_validate(existing)
+    for file in files:
+        if file.content_type not in settings.allowed_mime_types:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"{file.filename}: unsupported type '{file.content_type}'. Allowed: {settings.allowed_mime_types}",
+            )
 
-    doc = await svc.upload(file_bytes, file.filename or "upload", mime)
-    status_code = status.HTTP_201_CREATED
-    return DocumentResponse.model_validate(doc)
+        file_bytes = await file.read()
+
+        if len(file_bytes) > settings.max_upload_size_bytes:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"{file.filename}: file too large ({len(file_bytes)} bytes). Max: {settings.max_upload_size_bytes}",
+            )
+
+        checksum = hashlib.sha256(file_bytes).hexdigest()
+        existing = await db.scalar(select(Document).where(Document.checksum == checksum))
+
+        if existing:
+            results.append(DocumentUploadResult(
+                document=DocumentResponse.model_validate(existing),
+                created=False,
+            ))
+            continue
+
+        mime = file.content_type or "application/octet-stream"
+        doc = await svc.upload(file_bytes, file.filename or "upload", mime)
+        results.append(DocumentUploadResult(
+            document=DocumentResponse.model_validate(doc),
+            created=True,
+        ))
+
+    created = sum(1 for r in results if r.created)
+    return DocumentBatchUploadResponse(
+        results=results,
+        total=len(results),
+        created=created,
+        duplicates=len(results) - created,
+    )
 
 
 @router.get("", response_model=DocumentListResponse)

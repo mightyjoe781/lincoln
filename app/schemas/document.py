@@ -26,3 +26,15 @@ class DocumentListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+class DocumentUploadResult(BaseModel):
+    document: DocumentResponse
+    created: bool  # True = new upload, False = duplicate
+
+
+class DocumentBatchUploadResponse(BaseModel):
+    results: list[DocumentUploadResult]
+    total: int
+    created: int
+    duplicates: int

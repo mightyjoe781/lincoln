@@ -279,37 +279,37 @@ dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag-ove
 dropZone.addEventListener("drop", e => {
   e.preventDefault();
   dropZone.classList.remove("drag-over");
-  const file = e.dataTransfer.files[0];
-  if (file) handleUpload(file);
+  const files = Array.from(e.dataTransfer.files);
+  if (files.length) handleUpload(files);
 });
 fileInput.addEventListener("change", () => {
-  const file = fileInput.files[0];
-  if (file) handleUpload(file);
+  const files = Array.from(fileInput.files);
+  if (files.length) handleUpload(files);
   fileInput.value = "";
 });
 document.getElementById("refresh-docs").addEventListener("click", loadDocuments);
 
-async function handleUpload(file) {
-  if (!validateFile(file)) return;
+async function handleUpload(files) {
   dropError.classList.add("hidden");
 
-  const fd = new FormData();
-  fd.append("file", file);
+  // Validate all files client-side before sending
+  for (const file of files) {
+    if (!validateFile(file)) return;
+  }
 
-  let doc;
+  const fd = new FormData();
+  for (const file of files) fd.append("files", file);
+
+  let batch;
   try {
     const token = getToken();
     const res = await fetch(API_BASE + "/documents/upload", {
       method: "POST", body: fd,
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    doc = await res.json();
-    if (res.status === 200) {
-      toast("Already uploaded — returning existing record.", "warn");
-    } else if (res.status === 201) {
-      toast("Upload started!", "success");
-    } else {
-      toast(doc.detail ?? "Upload failed.", "error");
+    batch = await res.json();
+    if (!res.ok) {
+      toast(batch.detail ?? "Upload failed.", "error");
       return;
     }
   } catch {
@@ -317,8 +317,24 @@ async function handleUpload(file) {
     return;
   }
 
-  upsertDocRow(doc);
-  if (doc.status === "processing") startPoll(doc.id);
+  const { results, created, duplicates } = batch;
+
+  if (files.length === 1) {
+    const r = results[0];
+    toast(r.created ? "Upload started!" : "Already uploaded — returning existing record.", r.created ? "success" : "warn");
+  } else {
+    const parts = [];
+    if (created)    parts.push(`${created} queued`);
+    if (duplicates) parts.push(`${duplicates} duplicate${duplicates > 1 ? "s" : ""} skipped`);
+    toast(`${files.length} files: ${parts.join(", ")}.`, created ? "success" : "warn");
+  }
+
+  for (const r of results) {
+    upsertDocRow(r.document);
+    if (r.document.status === "pending" || r.document.status === "processing") {
+      startPoll(r.document.id);
+    }
+  }
 }
 
 function upsertDocRow(doc) {
