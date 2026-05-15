@@ -1,6 +1,6 @@
 # Lincoln — Financial Document Parser
 
-A production-grade FastAPI backend for uploading, parsing, and querying PDF invoices and CSV bank statements.
+A production-grade FastAPI backend with a built-in web UI for uploading, parsing, and querying PDF invoices and CSV bank statements.
 
 ## Quick Start
 
@@ -14,7 +14,7 @@ cp .env.example .env
 docker compose up --build
 ```
 
-API available at http://localhost:8000  
+Web UI at http://localhost:8000/  
 Swagger UI at http://localhost:8000/docs
 
 ### Local Development
@@ -97,6 +97,18 @@ alembic upgrade head
 pytest -v
 ```
 
+## Web UI
+
+A minimal single-page interface is served directly from the FastAPI app at `/`. No build step required — plain HTML + vanilla JS + Tailwind CSS (CDN).
+
+| Tab | Features |
+|---|---|
+| **Upload** | Drag-and-drop or file picker; real-time processing status via polling; delete documents |
+| **Invoices** | Filterable, paginated table; slide-in detail panel with line items |
+| **Transactions** | Filterable, paginated table; debit/credit colour coding |
+
+Files live in `ui/` and are mounted via FastAPI `StaticFiles`.
+
 ## Architecture
 
 ```
@@ -108,6 +120,10 @@ app/
 ├── schemas/         # Pydantic request/response models
 ├── services/        # Business logic layer
 └── storage/         # File storage abstraction
+ui/
+├── index.html       # Single-page tab layout
+├── app.js           # All JS — upload, polling, list, filter, detail panel
+└── style.css        # Tailwind overrides
 ```
 
 ## Known Limitations

@@ -1,7 +1,7 @@
 import uuid
 from datetime import date
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.transaction import Transaction
@@ -21,31 +21,34 @@ class TransactionService:
         amount_min: float | None = None,
         amount_max: float | None = None,
         currency: str | None = None,
+        q: str | None = None,
         page: int = 1,
         page_size: int = 20,
         sort_by: str = "date",
         sort_order: str = "desc",
     ) -> list[Transaction]:
-        q = select(Transaction)
+        stmt = select(Transaction)
+        if q:
+            stmt = stmt.where(Transaction.search_vector.op('@@')(func.plainto_tsquery('english', q)))
         if date_from:
-            q = q.where(Transaction.transaction_date >= date_from)
+            stmt = stmt.where(Transaction.transaction_date >= date_from)
         if date_to:
-            q = q.where(Transaction.transaction_date <= date_to)
+            stmt = stmt.where(Transaction.transaction_date <= date_to)
         if amount_min is not None:
-            q = q.where(Transaction.amount >= amount_min)
+            stmt = stmt.where(Transaction.amount >= amount_min)
         if amount_max is not None:
-            q = q.where(Transaction.amount <= amount_max)
+            stmt = stmt.where(Transaction.amount <= amount_max)
         if currency:
-            q = q.where(Transaction.currency == currency.upper())
+            stmt = stmt.where(Transaction.currency == currency.upper())
 
         order_col = {
             "date": Transaction.transaction_date,
             "amount": Transaction.amount,
         }.get(sort_by, Transaction.transaction_date)
-        q = q.order_by(order_col.desc() if sort_order == "desc" else order_col.asc())
-        q = q.offset((page - 1) * page_size).limit(page_size)
+        stmt = stmt.order_by(order_col.desc() if sort_order == "desc" else order_col.asc())
+        stmt = stmt.offset((page - 1) * page_size).limit(page_size)
 
-        result = await self.db.scalars(q)
+        result = await self.db.scalars(stmt)
         return list(result)
 
     async def update(self, txn_id: uuid.UUID, **kwargs) -> Transaction | None:

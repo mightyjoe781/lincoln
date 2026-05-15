@@ -11,6 +11,7 @@ from app.db.models.line_item import LineItem
 from app.db.models.transaction import Transaction
 from app.parsers.registry import get_file_type, get_parser
 from app.storage.local import LocalFileStorage
+from app.worker.tasks import parse_document_task
 
 
 class DocumentService:
@@ -37,23 +38,13 @@ class DocumentService:
             file_size=len(file_bytes),
             file_path=file_path,
             checksum=checksum,
-            status="processing",
+            status="pending",
         )
         self.db.add(doc)
-        await self.db.flush()
-
-        try:
-            parser = get_parser(mime_type)
-            parse_result = parser.parse(file_bytes)
-            await self._persist_parsed_data(doc, parse_result, file_type)
-            doc.status = "done"
-            doc.processed_at = datetime.now(timezone.utc)
-        except Exception as exc:
-            doc.status = "failed"
-            doc.error_message = str(exc)
-
         await self.db.commit()
         await self.db.refresh(doc)
+
+        parse_document_task.delay(str(doc.id))
         return doc
 
     async def _persist_parsed_data(self, doc: Document, result, file_type: str) -> None:

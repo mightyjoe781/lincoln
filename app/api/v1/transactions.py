@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db
+from app.api.deps import get_current_user, get_db
+from app.db.models.user import User
 from app.db.models.transaction import Transaction
 from app.schemas.transaction import TransactionListResponse, TransactionResponse, TransactionUpdate
 from app.services.transaction_service import TransactionService
@@ -21,6 +22,7 @@ async def list_transactions(
     amount_min: Optional[float] = Query(None),
     amount_max: Optional[float] = Query(None),
     currency: Optional[str] = Query(None),
+    q: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     sort_by: str = Query("date", pattern="^(date|amount)$"),
@@ -34,23 +36,26 @@ async def list_transactions(
         amount_min=amount_min,
         amount_max=amount_max,
         currency=currency,
+        q=q,
         page=page,
         page_size=page_size,
         sort_by=sort_by,
         sort_order=sort_order,
     )
-    q = select(func.count()).select_from(Transaction)
+    count_stmt = select(func.count()).select_from(Transaction)
+    if q:
+        count_stmt = count_stmt.where(Transaction.search_vector.op('@@')(func.plainto_tsquery('english', q)))
     if date_from:
-        q = q.where(Transaction.transaction_date >= date_from)
+        count_stmt = count_stmt.where(Transaction.transaction_date >= date_from)
     if date_to:
-        q = q.where(Transaction.transaction_date <= date_to)
+        count_stmt = count_stmt.where(Transaction.transaction_date <= date_to)
     if amount_min is not None:
-        q = q.where(Transaction.amount >= amount_min)
+        count_stmt = count_stmt.where(Transaction.amount >= amount_min)
     if amount_max is not None:
-        q = q.where(Transaction.amount <= amount_max)
+        count_stmt = count_stmt.where(Transaction.amount <= amount_max)
     if currency:
-        q = q.where(Transaction.currency == currency.upper())
-    total = await db.scalar(q) or 0
+        count_stmt = count_stmt.where(Transaction.currency == currency.upper())
+    total = await db.scalar(count_stmt) or 0
 
     return TransactionListResponse(
         items=[TransactionResponse.model_validate(t) for t in items],
@@ -74,6 +79,7 @@ async def update_transaction(
     txn_id: uuid.UUID,
     body: TransactionUpdate,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     svc = TransactionService(db)
     updated = await svc.update(txn_id, **body.model_dump(exclude_none=True))
@@ -83,7 +89,7 @@ async def update_transaction(
 
 
 @router.delete("/{txn_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_transaction(txn_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def delete_transaction(txn_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     svc = TransactionService(db)
     deleted = await svc.delete(txn_id)
     if not deleted:

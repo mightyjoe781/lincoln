@@ -2,15 +2,17 @@ import hashlib
 import uuid
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db
+from app.api.deps import get_current_user, get_db
+from app.db.models.user import User
 from app.core.config import settings
 from app.db.models.document import Document
 from app.schemas.document import DocumentListResponse, DocumentResponse
 from app.services.document_service import DocumentService
+from app.core.limiter import limiter
 from app.storage.local import LocalFileStorage
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -21,9 +23,12 @@ def get_storage() -> LocalFileStorage:
 
 
 @router.post("/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")
 async def upload_document(
+    request: Request,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     if file.content_type not in settings.allowed_mime_types:
         raise HTTPException(
@@ -80,7 +85,7 @@ async def get_document(doc_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 
 
 @router.delete("/{doc_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_document(doc_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def delete_document(doc_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     svc = DocumentService(db, get_storage())
     deleted = await svc.delete(doc_id)
     if not deleted:

@@ -3,6 +3,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String, Text
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -16,6 +17,7 @@ class Transaction(Base):
     document_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True)
     transaction_date: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    search_vector: Mapped[str | None] = mapped_column(postgresql.TSVECTOR, nullable=True)
     amount: Mapped[Decimal | None] = mapped_column(Numeric(15, 4), nullable=True)
     currency: Mapped[str | None] = mapped_column(String(10), nullable=True, index=True)
     debit_credit: Mapped[str | None] = mapped_column(String(10), nullable=True)
