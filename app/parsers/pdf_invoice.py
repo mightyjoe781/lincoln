@@ -116,12 +116,8 @@ class PdfInvoiceParser:
                 items.extend(self._extract_line_items_regex(page_text, warnings))
         return items
 
-    def _extract_line_items_from_table(
-        self, page, warnings: list[str]
-    ) -> list[ParsedLineItem]:
-        tables = page.extract_tables(
-            {"vertical_strategy": "lines", "horizontal_strategy": "lines"}
-        )
+    def _extract_line_items_from_table(self, page, warnings: list[str]) -> list[ParsedLineItem]:
+        tables = page.extract_tables({"vertical_strategy": "lines", "horizontal_strategy": "lines"})
         if not tables:
             return []
 
@@ -155,18 +151,30 @@ class PdfInvoiceParser:
                 if _SKIP_ROW_RE.search(row_text):
                     continue
                 # Skip rows where all non-desc cells are empty (section headers)
-                numeric_cells = [
-                    i for i in [qty_col, uprice_col, total_col] if i is not None
-                ]
+                numeric_cells = [i for i in [qty_col, uprice_col, total_col] if i is not None]
                 if numeric_cells and all(
                     row[i] is None or str(row[i]).strip() == "" for i in numeric_cells
                 ):
                     continue
 
-                desc = str(row[desc_col]).strip() if desc_col is not None and row[desc_col] else None
-                total = parse_amount(str(row[total_col])) if total_col is not None and row[total_col] else None
-                qty = parse_amount(str(row[qty_col])) if qty_col is not None and row[qty_col] else None
-                unit_price = parse_amount(str(row[uprice_col])) if uprice_col is not None and row[uprice_col] else None
+                desc = (
+                    str(row[desc_col]).strip() if desc_col is not None and row[desc_col] else None
+                )
+                total = (
+                    parse_amount(str(row[total_col]))
+                    if total_col is not None and row[total_col]
+                    else None
+                )
+                qty = (
+                    parse_amount(str(row[qty_col]))
+                    if qty_col is not None and row[qty_col]
+                    else None
+                )
+                unit_price = (
+                    parse_amount(str(row[uprice_col]))
+                    if uprice_col is not None and row[uprice_col]
+                    else None
+                )
 
                 if total is not None and desc and len(desc) > 2:
                     items.append(
@@ -182,7 +190,9 @@ class PdfInvoiceParser:
 
         return items
 
-    def _extract_line_items_regex(self, page_text: str, warnings: list[str]) -> list[ParsedLineItem]:
+    def _extract_line_items_regex(
+        self, page_text: str, warnings: list[str]
+    ) -> list[ParsedLineItem]:
         items = []
         for line in page_text.splitlines():
             m = re.match(r"^(.+?)\s{2,}(\d[\d,. ]+)$", line.strip())

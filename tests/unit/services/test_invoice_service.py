@@ -84,3 +84,80 @@ async def test_list_pagination(db):
     page2 = await InvoiceService(db).list(page=2, page_size=2)
     assert len(page1) == 2
     assert page1[0].id != page2[0].id
+
+
+@pytest.mark.asyncio
+async def test_get_invoice_by_id(db):
+    await _seed(db)
+    all_invoices = await InvoiceService(db).list()
+    first = all_invoices[0]
+    fetched = await InvoiceService(db).get(first.id)
+    assert fetched is not None
+    assert fetched.id == first.id
+
+
+@pytest.mark.asyncio
+async def test_get_invoice_returns_none_for_missing(db):
+    result = await InvoiceService(db).get(uuid.uuid4())
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_list_amount_range_filter(db):
+    await _seed(db)
+    results = await InvoiceService(db).list(amount_min=600, amount_max=1200)
+    assert all(600 <= float(r.total_amount) <= 1200 for r in results)
+
+
+@pytest.mark.asyncio
+async def test_list_currency_filter(db):
+    await _seed(db)
+    results = await InvoiceService(db).list(currency="EUR")
+    assert all(r.currency == "EUR" for r in results)
+    assert len(results) >= 1
+
+
+@pytest.mark.asyncio
+async def test_list_empty_result_returns_empty_list(db):
+    await _seed(db)
+    results = await InvoiceService(db).list(vendor_name="ZZZ_NO_MATCH_XYZ")
+    assert results == []
+
+
+@pytest.mark.asyncio
+async def test_list_sort_by_amount_desc(db):
+    await _seed(db)
+    results = await InvoiceService(db).list(sort_by="amount", sort_order="desc")
+    amounts = [float(r.total_amount) for r in results if r.total_amount is not None]
+    assert amounts == sorted(amounts, reverse=True)
+
+
+@pytest.mark.asyncio
+async def test_update_invoice_vendor_name(db):
+    await _seed(db)
+    invoices = await InvoiceService(db).list()
+    target = invoices[0]
+    updated = await InvoiceService(db).update(target.id, vendor_name="Updated Corp")
+    assert updated is not None
+    assert updated.vendor_name == "Updated Corp"
+
+
+@pytest.mark.asyncio
+async def test_update_nonexistent_invoice_returns_none(db):
+    result = await InvoiceService(db).update(uuid.uuid4(), vendor_name="Ghost")
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_delete_invoice_returns_true(db):
+    await _seed(db)
+    invoices = await InvoiceService(db).list()
+    target = invoices[0]
+    deleted = await InvoiceService(db).delete(target.id)
+    assert deleted is True
+    assert await InvoiceService(db).get(target.id) is None
+
+
+@pytest.mark.asyncio
+async def test_delete_missing_invoice_returns_false(db):
+    assert await InvoiceService(db).delete(uuid.uuid4()) is False

@@ -111,9 +111,7 @@ def test_parse_invoice(pdf_name, expected_fields, expected_warnings):
             )
         else:
             actual = getattr(result, field)
-            assert actual == expected, (
-                f"{pdf_name}: {field} expected {expected!r}, got {actual!r}"
-            )
+            assert actual == expected, f"{pdf_name}: {field} expected {expected!r}, got {actual!r}"
 
     actual_warnings = set(result.parse_warnings)
     assert actual_warnings == expected_warnings, (
