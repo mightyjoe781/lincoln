@@ -46,7 +46,7 @@ alembic/versions/__pycache__/
 
 # Uploads / local storage
 uploads/
-storage/
+/storage/
 *.pdf
 *.csv
 !test-samples/
