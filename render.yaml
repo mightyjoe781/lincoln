@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: lincoln-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: lincoln-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: lincoln-redis
+          type: redis
+          property: connectionString
+      - key: UPLOAD_DIR
+        value: /uploads
+      - key: ENVIRONMENT
+        value: production
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+      - key: MAX_UPLOAD_SIZE_BYTES
+        value: 20971520
+
+  - type: redis
+    name: lincoln-redis
+    plan: free
+    maxmemoryPolicy: noeviction
+
+databases:
+  - name: lincoln-db
+    databaseName: lincoln
+    plan: free

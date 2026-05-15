@@ -91,10 +91,10 @@ All are self-contained additions on top of the completed core (phases 0–8).
 **Goal:** Publicly accessible deployment with a live URL to include in the submission.
 
 ### Option A — Render (simplest)
-- [ ] `render.yaml` — web service (app) + PostgreSQL managed DB
-- [ ] Set `DATABASE_URL` via Render environment secret
-- [ ] `alembic upgrade head` as the pre-deploy command
-- [ ] Add live URL to `README.md`
+- [x] `render.yaml` — web service (app) + PostgreSQL managed DB
+- [x] Set `DATABASE_URL` via Render environment secret
+- [x] `alembic upgrade head` as the pre-deploy command
+- [x] Add live URL to `README.md`
 
 ### Option B — AWS (ECS + RDS)
 - [ ] ECR repository + `docker push` to ECR in CI

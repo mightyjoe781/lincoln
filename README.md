@@ -126,6 +126,16 @@ ui/
 └── style.css        # Tailwind overrides
 ```
 
+## Cloud Deployment
+
+### Render (one-click)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+
+See [`deployment/render.md`](deployment/render.md) for full instructions.
+
+The `render.yaml` Blueprint provisions the API, PostgreSQL, and Redis automatically.
+
 ## Known Limitations
 
 - PDF parsing is regex-based and works best with text-layer PDFs (not scanned images)

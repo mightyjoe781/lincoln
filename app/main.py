@@ -3,6 +3,7 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from prometheus_fastapi_instrumentator import Instrumentator
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -10,6 +11,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from app.api.v1.router import v1_router
 from app.core.limiter import limiter
 from app.core.logging import configure_logging
+from app.core.middleware import RequestIDMiddleware
 
 configure_logging()
 logger = logging.getLogger("lincoln")
@@ -24,6 +26,7 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(RequestIDMiddleware)
 
 app.include_router(v1_router)
 
@@ -41,5 +44,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 async def health():
     return {"status": "ok"}
 
+
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
 app.mount("/", StaticFiles(directory="ui", html=True), name="ui")

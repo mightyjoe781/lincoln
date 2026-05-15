@@ -25,6 +25,8 @@ dependencies = [
     "passlib[bcrypt]>=1.7.4",
     "celery>=5.3.0",
     "redis>=5.0.0",
+    "prometheus-fastapi-instrumentator>=6.1.0",
+    "structlog>=24.1.0",
 ]
 
 [project.optional-dependencies]
