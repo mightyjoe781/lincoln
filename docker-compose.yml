@@ -34,6 +34,9 @@ services:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/lincoln
       - UPLOAD_DIR=/uploads
       - REDIS_URL=redis://redis:6379/0
+      # Default admin — override in .env or pass on the CLI
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
     ports:
       - "8000:8000"
     depends_on:
