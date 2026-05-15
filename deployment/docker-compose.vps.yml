@@ -1,0 +1,168 @@
+# Lincoln — VPS deployment compose
+#
+# Usage:
+#   cp .env.example .env   # fill in secrets
+#   docker compose -f deployment/docker-compose.vps.yml up -d
+#
+# Nginx → 127.0.0.1:13006 → lincoln-app:8000
+# Prometheus (monitoring network) → lincoln-app:8000/metrics
+# Alloy auto-discovers all containers → Loki (no extra config needed)
+
+services:
+
+  #--------------------------------------------------------------------
+  #  PostgreSQL
+  #--------------------------------------------------------------------
+  lincoln-db:
+    image: postgres:16-alpine
+    container_name: lincoln-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lincoln}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-lincoln}
+      TZ: Asia/Kolkata
+    volumes:
+      - lincoln_postgres_data:/var/lib/postgresql/data
+    expose:
+      - 5432
+    networks:
+      - lincoln_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lincoln}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      group: "lincoln"
+      host.name: "${HOST_NAME}"
+
+  #--------------------------------------------------------------------
+  #  Redis
+  #--------------------------------------------------------------------
+  lincoln-redis:
+    image: redis:7-alpine
+    container_name: lincoln-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 128mb --maxmemory-policy noeviction
+    environment:
+      TZ: Asia/Kolkata
+    expose:
+      - 6379
+    volumes:
+      - lincoln_redis_data:/data
+    networks:
+      - lincoln_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      group: "lincoln"
+      host.name: "${HOST_NAME}"
+
+  #--------------------------------------------------------------------
+  #  API
+  #--------------------------------------------------------------------
+  lincoln-app:
+    image: lincoln:latest           # build locally: docker build -t lincoln:latest .
+    container_name: lincoln-app
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lincoln}:${POSTGRES_PASSWORD}@lincoln-db:5432/${POSTGRES_DB:-lincoln}
+      REDIS_URL: redis://lincoln-redis:6379/0
+      UPLOAD_DIR: /uploads
+      TZ: Asia/Kolkata
+    ports:
+      - "127.0.0.1:13006:8000"      # nginx → lincoln.sudomoon.com
+    volumes:
+      - lincoln_uploads:/uploads
+    networks:
+      - lincoln_net
+      - monitoring                   # Prometheus scrapes /metrics on this network
+    depends_on:
+      lincoln-db:
+        condition: service_healthy
+      lincoln-redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s             # alembic + seed run before uvicorn
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      group: "lincoln"
+      host.name: "${HOST_NAME}"
+
+  #--------------------------------------------------------------------
+  #  Celery worker
+  #--------------------------------------------------------------------
+  lincoln-worker:
+    image: lincoln:latest
+    container_name: lincoln-worker
+    restart: unless-stopped
+    command: celery -A app.worker.celery_app worker --loglevel=info --concurrency=2
+    env_file: ../.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lincoln}:${POSTGRES_PASSWORD}@lincoln-db:5432/${POSTGRES_DB:-lincoln}
+      REDIS_URL: redis://lincoln-redis:6379/0
+      UPLOAD_DIR: /uploads
+      TZ: Asia/Kolkata
+    volumes:
+      - lincoln_uploads:/uploads
+    networks:
+      - lincoln_net
+    depends_on:
+      lincoln-db:
+        condition: service_healthy
+      lincoln-redis:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      group: "lincoln"
+      host.name: "${HOST_NAME}"
+
+#----------------------------------------------------------------------
+#  Networks
+#----------------------------------------------------------------------
+networks:
+  lincoln_net:
+    name: lincoln_net
+    driver: bridge
+
+  monitoring:
+    external: true                  # already exists in your monitoring stack
+    name: monitoring
+
+#----------------------------------------------------------------------
+#  Volumes
+#----------------------------------------------------------------------
+volumes:
+  lincoln_postgres_data:
+    name: lincoln_postgres_data
+  lincoln_redis_data:
+    name: lincoln_redis_data
+  lincoln_uploads:
+    name: lincoln_uploads

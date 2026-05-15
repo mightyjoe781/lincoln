@@ -1,0 +1,14 @@
+# Add this job to your existing prometheus/prometheus.yml scrape_configs.
+#
+# Lincoln is on the `monitoring` network, so Prometheus can reach it
+# directly by container name. No port publish needed.
+
+scrape_configs:
+  - job_name: lincoln
+    static_configs:
+      - targets: ["lincoln-app:8000"]
+    metrics_path: /metrics
+    scrape_interval: 15s
+    labels:
+      host: "${HOST_NAME}"
+      service: lincoln
