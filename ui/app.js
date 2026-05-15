@@ -2,6 +2,126 @@
 
 const API_BASE = "/api/v1";
 
+// ── Auth token ─────────────────────────────────────────────────────────────
+
+const TOKEN_KEY = "lincoln_token";
+const EMAIL_KEY = "lincoln_email";
+
+function getToken() { return localStorage.getItem(TOKEN_KEY); }
+function setToken(t, email) {
+  localStorage.setItem(TOKEN_KEY, t);
+  localStorage.setItem(EMAIL_KEY, email);
+}
+function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(EMAIL_KEY);
+}
+
+// ── Auth modal ─────────────────────────────────────────────────────────────
+
+const authBackdrop    = document.getElementById("auth-backdrop");
+const authEmailInput  = document.getElementById("auth-email-input");
+const authPassInput   = document.getElementById("auth-password-input");
+const authError       = document.getElementById("auth-error");
+const authSubmit      = document.getElementById("auth-submit");
+const authTabLogin    = document.getElementById("auth-tab-login");
+const authTabRegister = document.getElementById("auth-tab-register");
+const authEmailLabel  = document.getElementById("auth-email");
+const logoutBtn       = document.getElementById("logout-btn");
+
+let authMode = "login"; // "login" | "register"
+
+function setAuthMode(mode) {
+  authMode = mode;
+  authError.classList.add("hidden");
+  const loginActive = mode === "login";
+  authTabLogin.className    = `auth-mode-btn flex-1 py-1.5 rounded-md text-sm font-medium transition ${loginActive    ? "bg-white shadow text-blue-700" : "text-gray-500 hover:text-gray-700"}`;
+  authTabRegister.className = `auth-mode-btn flex-1 py-1.5 rounded-md text-sm font-medium transition ${!loginActive   ? "bg-white shadow text-blue-700" : "text-gray-500 hover:text-gray-700"}`;
+  authSubmit.textContent = loginActive ? "Login" : "Register";
+  document.getElementById("auth-password-input").autocomplete = loginActive ? "current-password" : "new-password";
+}
+
+authTabLogin.addEventListener("click", () => setAuthMode("login"));
+authTabRegister.addEventListener("click", () => setAuthMode("register"));
+
+authSubmit.addEventListener("click", handleAuth);
+[authEmailInput, authPassInput].forEach(el =>
+  el.addEventListener("keydown", e => { if (e.key === "Enter") handleAuth(); })
+);
+
+async function handleAuth() {
+  const email = authEmailInput.value.trim();
+  const password = authPassInput.value;
+  authError.classList.add("hidden");
+
+  if (!email || !password) {
+    showAuthError("Email and password are required.");
+    return;
+  }
+
+  authSubmit.disabled = true;
+  authSubmit.textContent = authMode === "login" ? "Signing in…" : "Registering…";
+
+  try {
+    if (authMode === "register") {
+      await fetch(API_BASE + "/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      }).then(async r => {
+        if (!r.ok) {
+          const d = await r.json().catch(() => ({}));
+          throw new Error(d.detail ?? "Registration failed.");
+        }
+      });
+      toast("Account created! Signing you in…", "success");
+    }
+
+    // Login (always after register too)
+    const fd = new URLSearchParams({ username: email, password });
+    const res = await fetch(API_BASE + "/auth/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: fd,
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      throw new Error(d.detail ?? "Invalid credentials.");
+    }
+    const { access_token } = await res.json();
+    setToken(access_token, email);
+    showLoggedIn(email);
+    authBackdrop.classList.add("hidden");
+    activateTab("upload");
+  } catch (err) {
+    showAuthError(err.message);
+  } finally {
+    authSubmit.disabled = false;
+    setAuthMode(authMode); // reset button label
+  }
+}
+
+function showAuthError(msg) {
+  authError.textContent = msg;
+  authError.classList.remove("hidden");
+}
+
+function showLoggedIn(email) {
+  authEmailLabel.textContent = email;
+  authEmailLabel.classList.remove("hidden");
+  logoutBtn.classList.remove("hidden");
+}
+
+logoutBtn.addEventListener("click", () => {
+  clearToken();
+  authEmailLabel.classList.add("hidden");
+  logoutBtn.classList.add("hidden");
+  authEmailInput.value = "";
+  authPassInput.value = "";
+  setAuthMode("login");
+  authBackdrop.classList.remove("hidden");
+});
+
 // ── Utilities ──────────────────────────────────────────────────────────────
 
 function fmt(bytes) {
@@ -29,7 +149,19 @@ function qs(params) {
 }
 
 async function apiFetch(path, opts = {}) {
+  const token = getToken();
+  if (token) {
+    opts.headers = { ...(opts.headers ?? {}), Authorization: `Bearer ${token}` };
+  }
   const res = await fetch(API_BASE + path, opts);
+  if (res.status === 401) {
+    clearToken();
+    authEmailLabel.classList.add("hidden");
+    logoutBtn.classList.add("hidden");
+    setAuthMode("login");
+    authBackdrop.classList.remove("hidden");
+    throw Object.assign(new Error("Session expired. Please log in again."), { status: 401 });
+  }
   if (!res.ok) {
     let detail = res.statusText;
     try { detail = (await res.json()).detail ?? detail; } catch {}
@@ -166,7 +298,11 @@ async function handleUpload(file) {
 
   let doc;
   try {
-    const res = await fetch(API_BASE + "/documents/upload", { method: "POST", body: fd });
+    const token = getToken();
+    const res = await fetch(API_BASE + "/documents/upload", {
+      method: "POST", body: fd,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
     doc = await res.json();
     if (res.status === 200) {
       toast("Already uploaded — returning existing record.", "warn");
@@ -504,4 +640,13 @@ function renderPagination(container, currentPage, totalPages, onNavigate) {
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 
-activateTab("upload");
+setAuthMode("login");
+const _savedToken = getToken();
+const _savedEmail = localStorage.getItem(EMAIL_KEY);
+if (_savedToken) {
+  authBackdrop.classList.add("hidden");
+  if (_savedEmail) showLoggedIn(_savedEmail);
+  activateTab("upload");
+} else {
+  authBackdrop.classList.remove("hidden");
+}
