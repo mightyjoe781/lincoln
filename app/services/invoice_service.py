@@ -36,7 +36,7 @@ class InvoiceService:
     ) -> list[Invoice]:
         stmt = select(Invoice).options(selectinload(Invoice.line_items))
         if q:
-            stmt = stmt.where(Invoice.search_vector.op('@@')(func.plainto_tsquery('english', q)))
+            stmt = stmt.where(Invoice.search_vector.op("@@")(func.plainto_tsquery("english", q)))
         if vendor_name:
             stmt = stmt.where(Invoice.vendor_name.ilike(f"%{vendor_name}%"))
         if date_from:

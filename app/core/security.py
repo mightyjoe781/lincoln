@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
+
 import bcrypt
 from jose import JWTError, jwt
+
 from app.core.config import settings
 
 
@@ -14,7 +16,9 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 def create_access_token(subject: str) -> str:
     expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
-    return jwt.encode({"sub": subject, "exp": expire}, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
+    return jwt.encode(
+        {"sub": subject, "exp": expire}, settings.jwt_secret_key, algorithm=settings.jwt_algorithm
+    )
 
 
 def decode_token(token: str) -> str:  # returns email/subject or raises JWTError

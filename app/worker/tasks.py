@@ -1,5 +1,5 @@
 import asyncio
-from celery import shared_task
+
 from app.worker.celery_app import celery_app
 
 
@@ -10,13 +10,14 @@ def parse_document_task(self, document_id: str):
 
 
 async def _parse_document(document_id: str):
-    from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-    from sqlalchemy import select
+    from datetime import datetime, timezone
+
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
     from app.core.config import settings
     from app.db.models.document import Document
-    from app.parsers.registry import get_parser, get_file_type
+    from app.parsers.registry import get_file_type, get_parser
     from app.storage.local import LocalFileStorage
-    from datetime import datetime, timezone
 
     engine = create_async_engine(settings.database_url)
     AsyncSession = async_sessionmaker(engine, expire_on_commit=False)
@@ -49,10 +50,11 @@ async def _parse_document(document_id: str):
 
 
 async def _persist_parsed(db, doc, parser, file_bytes, file_type):
+    import uuid
+
     from app.db.models.invoice import Invoice
     from app.db.models.line_item import LineItem
     from app.db.models.transaction import Transaction
-    import uuid
 
     if file_type == "pdf_invoice":
         result = parser.parse(file_bytes)
@@ -71,26 +73,30 @@ async def _persist_parsed(db, doc, parser, file_bytes, file_type):
         db.add(invoice)
         await db.flush()
         for li in result.line_items:
-            db.add(LineItem(
-                id=uuid.uuid4(),
-                invoice_id=invoice.id,
-                description=li.description,
-                quantity=li.quantity,
-                unit_price=li.unit_price,
-                total=li.total,
-                currency=li.currency,
-            ))
+            db.add(
+                LineItem(
+                    id=uuid.uuid4(),
+                    invoice_id=invoice.id,
+                    description=li.description,
+                    quantity=li.quantity,
+                    unit_price=li.unit_price,
+                    total=li.total,
+                    currency=li.currency,
+                )
+            )
     else:
         results = parser.parse(file_bytes)
         for r in results:
-            db.add(Transaction(
-                id=uuid.uuid4(),
-                document_id=doc.id,
-                transaction_date=r.transaction_date,
-                description=r.description,
-                amount=r.amount,
-                currency=r.currency,
-                debit_credit=r.debit_credit,
-                balance=r.balance,
-                reference=r.reference,
-            ))
+            db.add(
+                Transaction(
+                    id=uuid.uuid4(),
+                    document_id=doc.id,
+                    transaction_date=r.transaction_date,
+                    description=r.description,
+                    amount=r.amount,
+                    currency=r.currency,
+                    debit_credit=r.debit_credit,
+                    balance=r.balance,
+                    reference=r.reference,
+                )
+            )

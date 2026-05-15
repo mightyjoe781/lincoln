@@ -5,10 +5,32 @@ from decimal import Decimal, InvalidOperation
 from dateutil import parser as dateutil_parser
 
 SYMBOL_TO_ISO = {
-    "$": "USD", "€": "EUR", "£": "GBP", "¥": "JPY", "₹": "INR",
-    "₩": "KRW", "₣": "CHF", "A$": "AUD", "C$": "CAD",
+    "$": "USD",
+    "€": "EUR",
+    "£": "GBP",
+    "¥": "JPY",
+    "₹": "INR",
+    "₩": "KRW",
+    "₣": "CHF",
+    "A$": "AUD",
+    "C$": "CAD",
 }
-KNOWN_ISO = {"USD", "EUR", "GBP", "JPY", "INR", "CHF", "AUD", "CAD", "KRW", "SGD", "HKD", "NZD", "MXN", "BRL"}
+KNOWN_ISO = {
+    "USD",
+    "EUR",
+    "GBP",
+    "JPY",
+    "INR",
+    "CHF",
+    "AUD",
+    "CAD",
+    "KRW",
+    "SGD",
+    "HKD",
+    "NZD",
+    "MXN",
+    "BRL",
+}
 
 
 def parse_date(raw: str | None) -> date | None:

@@ -7,9 +7,10 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
-from app.db.models.user import User
 from app.core.config import settings
+from app.core.limiter import limiter
 from app.db.models.document import Document
+from app.db.models.user import User
 from app.schemas.document import (
     DocumentBatchUploadResponse,
     DocumentListResponse,
@@ -17,7 +18,6 @@ from app.schemas.document import (
     DocumentUploadResult,
 )
 from app.services.document_service import DocumentService
-from app.core.limiter import limiter
 from app.storage.local import LocalFileStorage
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -81,18 +81,22 @@ async def upload_document(
         existing = await db.scalar(select(Document).where(Document.checksum == checksum))
 
         if existing:
-            results.append(DocumentUploadResult(
-                document=DocumentResponse.model_validate(existing),
-                created=False,
-            ))
+            results.append(
+                DocumentUploadResult(
+                    document=DocumentResponse.model_validate(existing),
+                    created=False,
+                )
+            )
             continue
 
         mime = file.content_type or "application/octet-stream"
         doc = await svc.upload(file_bytes, file.filename or "upload", mime)
-        results.append(DocumentUploadResult(
-            document=DocumentResponse.model_validate(doc),
-            created=True,
-        ))
+        results.append(
+            DocumentUploadResult(
+                document=DocumentResponse.model_validate(doc),
+                created=True,
+            )
+        )
 
     created = sum(1 for r in results if r.created)
     return DocumentBatchUploadResponse(
@@ -130,7 +134,11 @@ async def get_document(doc_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 
 
 @router.delete("/{doc_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_document(doc_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def delete_document(
+    doc_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     svc = DocumentService(db, get_storage())
     deleted = await svc.delete(doc_id)
     if not deleted:

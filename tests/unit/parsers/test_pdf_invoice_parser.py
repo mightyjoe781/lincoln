@@ -1,4 +1,5 @@
 import pytest
+
 from app.parsers.base import ParseError
 from app.parsers.pdf_invoice import PdfInvoiceParser
 

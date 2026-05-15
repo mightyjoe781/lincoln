@@ -15,12 +15,14 @@ Produces:
 """
 
 from pathlib import Path
+
 from fpdf import FPDF
 
 OUT = Path(__file__).parent
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
+
 
 def header(pdf: FPDF, title: str = "INVOICE") -> None:
     pdf.set_font("Helvetica", "B", 20)
@@ -60,6 +62,7 @@ def line_items_table(pdf: FPDF, items: list[tuple]) -> None:
 
 # ── 1. Complete invoice ───────────────────────────────────────────────────────
 
+
 def invoice_complete() -> None:
     pdf = FPDF()
     pdf.add_page()
@@ -98,6 +101,7 @@ def invoice_complete() -> None:
 
 # ── 2. Partial invoice (missing vendor + due date) ────────────────────────────
 
+
 def invoice_partial() -> None:
     pdf = FPDF()
     pdf.add_page()
@@ -126,21 +130,25 @@ def invoice_partial() -> None:
 
 # ── 3. Minimal invoice (only date + total) ────────────────────────────────────
 
+
 def invoice_minimal() -> None:
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Helvetica", "", 12)
-    pdf.multi_cell(0, 8,
+    pdf.multi_cell(
+        0,
+        8,
         "Payment Request\n\n"
         "Date: 15/06/2024\n\n"
         "Please remit payment for services rendered.\n\n"
-        "Amount Due: $875.00\n"
+        "Amount Due: $875.00\n",
     )
     pdf.output(str(OUT / "invoice_minimal.pdf"))
     print("  created: invoice_minimal.pdf")
 
 
 # ── 4. Multi-page invoice ─────────────────────────────────────────────────────
+
 
 def invoice_multipage() -> None:
     pdf = FPDF()
@@ -197,6 +205,7 @@ def invoice_multipage() -> None:
 
 # ── 5. Non-standard labels ────────────────────────────────────────────────────
 
+
 def invoice_non_standard() -> None:
     """Uses 'Amount Due', 'Bill From', 'Inv No' instead of standard labels."""
     pdf = FPDF()
@@ -229,6 +238,7 @@ def invoice_non_standard() -> None:
 
 
 # ── 6. Euro / European format ─────────────────────────────────────────────────
+
 
 def invoice_euro_format() -> None:
     pdf = FPDF()
@@ -289,6 +299,8 @@ if __name__ == "__main__":
     print("  invoice_complete.pdf      -> all fields extracted, 4 line items")
     print("  invoice_partial.pdf       -> vendor=None (warning), due_date=None (warning)")
     print("  invoice_minimal.pdf       -> only invoice_date + total_amount extracted")
-    print("  invoice_multipage.pdf     -> vendor + all fields from page 1, line items from both pages")
+    print(
+        "  invoice_multipage.pdf     -> vendor + all fields from page 1, line items from both pages"
+    )
     print("  invoice_non_standard.pdf  -> tests 'Bill From', 'Inv No', 'Amount Due', 'VAT' labels")
     print("  invoice_euro_format.pdf   -> EUR currency, European number format 1.234,56")

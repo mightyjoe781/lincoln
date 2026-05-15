@@ -7,8 +7,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
-from app.db.models.user import User
 from app.db.models.invoice import Invoice
+from app.db.models.user import User
 from app.schemas.invoice import InvoiceListResponse, InvoiceResponse, InvoiceUpdate
 from app.services.invoice_service import InvoiceService
 
@@ -47,7 +47,9 @@ async def list_invoices(
     # count with same filters (no pagination)
     count_stmt = select(func.count()).select_from(Invoice)
     if q:
-        count_stmt = count_stmt.where(Invoice.search_vector.op('@@')(func.plainto_tsquery('english', q)))
+        count_stmt = count_stmt.where(
+            Invoice.search_vector.op("@@")(func.plainto_tsquery("english", q))
+        )
     if vendor_name:
         count_stmt = count_stmt.where(Invoice.vendor_name.ilike(f"%{vendor_name}%"))
     if date_from:
@@ -94,7 +96,11 @@ async def update_invoice(
 
 
 @router.delete("/{invoice_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_invoice(invoice_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def delete_invoice(
+    invoice_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     svc = InvoiceService(db)
     deleted = await svc.delete(invoice_id)
     if not deleted:

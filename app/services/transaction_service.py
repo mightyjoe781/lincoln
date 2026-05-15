@@ -29,7 +29,9 @@ class TransactionService:
     ) -> list[Transaction]:
         stmt = select(Transaction)
         if q:
-            stmt = stmt.where(Transaction.search_vector.op('@@')(func.plainto_tsquery('english', q)))
+            stmt = stmt.where(
+                Transaction.search_vector.op("@@")(func.plainto_tsquery("english", q))
+            )
         if date_from:
             stmt = stmt.where(Transaction.transaction_date >= date_from)
         if date_to:

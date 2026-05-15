@@ -7,8 +7,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
-from app.db.models.user import User
 from app.db.models.transaction import Transaction
+from app.db.models.user import User
 from app.schemas.transaction import TransactionListResponse, TransactionResponse, TransactionUpdate
 from app.services.transaction_service import TransactionService
 
@@ -44,7 +44,9 @@ async def list_transactions(
     )
     count_stmt = select(func.count()).select_from(Transaction)
     if q:
-        count_stmt = count_stmt.where(Transaction.search_vector.op('@@')(func.plainto_tsquery('english', q)))
+        count_stmt = count_stmt.where(
+            Transaction.search_vector.op("@@")(func.plainto_tsquery("english", q))
+        )
     if date_from:
         count_stmt = count_stmt.where(Transaction.transaction_date >= date_from)
     if date_to:
@@ -89,7 +91,11 @@ async def update_transaction(
 
 
 @router.delete("/{txn_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_transaction(txn_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def delete_transaction(
+    txn_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     svc = TransactionService(db)
     deleted = await svc.delete(txn_id)
     if not deleted:

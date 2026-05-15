@@ -26,5 +26,9 @@ class Document(Base):
     )
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    invoices: Mapped[list["Invoice"]] = relationship("Invoice", back_populates="document", cascade="all, delete-orphan")
-    transactions: Mapped[list["Transaction"]] = relationship("Transaction", back_populates="document", cascade="all, delete-orphan")
+    invoices: Mapped[list["Invoice"]] = relationship(
+        "Invoice", back_populates="document", cascade="all, delete-orphan"
+    )
+    transactions: Mapped[list["Transaction"]] = relationship(
+        "Transaction", back_populates="document", cascade="all, delete-orphan"
+    )

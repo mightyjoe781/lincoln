@@ -1,4 +1,5 @@
 import pytest
+
 from app.storage.local import LocalFileStorage
 
 

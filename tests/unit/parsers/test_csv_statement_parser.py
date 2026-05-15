@@ -1,6 +1,8 @@
 from decimal import Decimal
 from pathlib import Path
+
 import pytest
+
 from app.parsers.base import ParseError
 from app.parsers.csv_statement import CsvStatementParser
 

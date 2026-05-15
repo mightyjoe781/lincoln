@@ -3,7 +3,7 @@ import re
 
 import pdfplumber
 
-from app.parsers.base import InvoiceParseResult, ParseError, ParsedLineItem
+from app.parsers.base import InvoiceParseResult, ParsedLineItem, ParseError
 from app.parsers.normalizers import normalize_currency, parse_amount, parse_date
 
 
@@ -20,8 +20,12 @@ class PdfInvoiceParser:
         warnings = result.parse_warnings
 
         result.vendor_name = self._extract_vendor(full_text, warnings)
-        result.invoice_date = self._extract_date(full_text, r"(?:invoice\s+date|date)[:\s]+([^\n]+)", warnings, "invoice date")
-        result.due_date = self._extract_date(full_text, r"(?:due\s+date|payment\s+due)[:\s]+([^\n]+)", warnings, "due date")
+        result.invoice_date = self._extract_date(
+            full_text, r"(?:invoice\s+date|date)[:\s]+([^\n]+)", warnings, "invoice date"
+        )
+        result.due_date = self._extract_date(
+            full_text, r"(?:due\s+date|payment\s+due)[:\s]+([^\n]+)", warnings, "due date"
+        )
         result.invoice_number = self._extract_invoice_number(full_text, warnings)
         result.currency, result.total_amount = self._extract_total(full_text, warnings)
         result.tax_amount = self._extract_tax(full_text, warnings)
@@ -48,14 +52,20 @@ class PdfInvoiceParser:
         return None
 
     def _extract_invoice_number(self, text: str, warnings: list[str]) -> str | None:
-        m = re.search(r"(?:invoice\s*#?|inv\s*#?|invoice\s+no\.?)[:\s]*([A-Z0-9\-]+)", text, re.IGNORECASE)
+        m = re.search(
+            r"(?:invoice\s*#?|inv\s*#?|invoice\s+no\.?)[:\s]*([A-Z0-9\-]+)", text, re.IGNORECASE
+        )
         if m:
             return m.group(1).strip()
         warnings.append("invoice_number not found")
         return None
 
     def _extract_total(self, text: str, warnings: list[str]) -> tuple[str | None, object]:
-        m = re.search(r"(?:total|amount\s+due|grand\s+total)[:\s]*([A-Z$€£¥₹]{0,5}\s*[\d,. ]+)", text, re.IGNORECASE)
+        m = re.search(
+            r"(?:total|amount\s+due|grand\s+total)[:\s]*([A-Z$€£¥₹]{0,5}\s*[\d,. ]+)",
+            text,
+            re.IGNORECASE,
+        )
         if m:
             raw = m.group(1).strip()
             currency_match = re.search(r"([A-Z$€£¥₹]{1,5})", raw)
@@ -71,7 +81,9 @@ class PdfInvoiceParser:
             return parse_amount(m.group(1).strip())
         return None
 
-    def _extract_line_items(self, pdf_pages_text: list[str], warnings: list[str]) -> list[ParsedLineItem]:
+    def _extract_line_items(
+        self, pdf_pages_text: list[str], warnings: list[str]
+    ) -> list[ParsedLineItem]:
         items = []
         for page_text in pdf_pages_text:
             # Look for simple table rows: description + amount

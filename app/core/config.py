@@ -14,6 +14,7 @@ class Settings(BaseSettings):
         if isinstance(v, str) and v.startswith("postgresql://"):
             return v.replace("postgresql://", "postgresql+asyncpg://", 1)
         return v
+
     upload_dir: str = "/tmp/lincoln_uploads"
     max_upload_size_bytes: int = 20 * 1024 * 1024  # 20 MB
     allowed_mime_types: list[str] = ["application/pdf", "text/csv", "application/octet-stream"]

@@ -1,6 +1,8 @@
 import uuid
 from datetime import date
+
 import pytest
+
 from app.db.models.document import Document
 from app.db.models.invoice import Invoice
 from app.services.invoice_service import InvoiceService
@@ -8,18 +10,53 @@ from app.services.invoice_service import InvoiceService
 
 async def _seed(db):
     doc = Document(
-        filename="seed.pdf", original_name="seed.pdf", file_type="pdf_invoice",
-        mime_type="application/pdf", file_size=100, file_path="/tmp/seed.pdf",
-        checksum=f"seed_{uuid.uuid4().hex}", status="done",
+        filename="seed.pdf",
+        original_name="seed.pdf",
+        file_type="pdf_invoice",
+        mime_type="application/pdf",
+        file_size=100,
+        file_path="/tmp/seed.pdf",
+        checksum=f"seed_{uuid.uuid4().hex}",
+        status="done",
     )
     db.add(doc)
     await db.flush()
     invoices = [
-        Invoice(document_id=doc.id, vendor_name="Acme Corp", invoice_date=date(2024, 1, 15), total_amount=1000, currency="USD"),
-        Invoice(document_id=doc.id, vendor_name="Acme Ltd", invoice_date=date(2024, 3, 10), total_amount=2000, currency="USD"),
-        Invoice(document_id=doc.id, vendor_name="Beta Inc", invoice_date=date(2024, 7, 1), total_amount=500, currency="EUR"),
-        Invoice(document_id=doc.id, vendor_name="Gamma Co", invoice_date=date(2024, 2, 20), total_amount=750, currency="USD"),
-        Invoice(document_id=doc.id, vendor_name="Acme Global", invoice_date=date(2024, 5, 25), total_amount=1500, currency="USD"),
+        Invoice(
+            document_id=doc.id,
+            vendor_name="Acme Corp",
+            invoice_date=date(2024, 1, 15),
+            total_amount=1000,
+            currency="USD",
+        ),
+        Invoice(
+            document_id=doc.id,
+            vendor_name="Acme Ltd",
+            invoice_date=date(2024, 3, 10),
+            total_amount=2000,
+            currency="USD",
+        ),
+        Invoice(
+            document_id=doc.id,
+            vendor_name="Beta Inc",
+            invoice_date=date(2024, 7, 1),
+            total_amount=500,
+            currency="EUR",
+        ),
+        Invoice(
+            document_id=doc.id,
+            vendor_name="Gamma Co",
+            invoice_date=date(2024, 2, 20),
+            total_amount=750,
+            currency="USD",
+        ),
+        Invoice(
+            document_id=doc.id,
+            vendor_name="Acme Global",
+            invoice_date=date(2024, 5, 25),
+            total_amount=1500,
+            currency="USD",
+        ),
     ]
     for inv in invoices:
         db.add(inv)

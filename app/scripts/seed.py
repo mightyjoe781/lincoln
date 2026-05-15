@@ -5,11 +5,11 @@ Run automatically by the Dockerfile CMD between alembic and uvicorn.
 Only acts when ADMIN_EMAIL and ADMIN_PASSWORD are set; safe to run on
 every restart (idempotent — skips creation if the user already exists).
 """
+
 import asyncio
-import sys
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.core.config import settings
 from app.core.security import hash_password
@@ -29,10 +29,12 @@ async def seed() -> None:
         if existing:
             print(f"Admin user already exists: {settings.admin_email}")
         else:
-            db.add(User(
-                email=settings.admin_email,
-                hashed_password=hash_password(settings.admin_password),
-            ))
+            db.add(
+                User(
+                    email=settings.admin_email,
+                    hashed_password=hash_password(settings.admin_password),
+                )
+            )
             await db.commit()
             print(f"Created admin user: {settings.admin_email}")
 
