@@ -69,7 +69,12 @@ POSTGRES_DB=lincoln
 
 # ── Runtime ──────────────────────────────────────────────────────────────────
 ENVIRONMENT=production
-HOST_NAME=sudomoon-vps             # used in Prometheus/Grafana labels — defaults to "vps" if unset
+
+# HOST_NAME is a free-text label — NOT a URL or hostname.
+# It tags metrics and logs in Prometheus/Grafana so you can filter by server
+# when you have multiple VPS instances. Pick any short identifier you like.
+# Examples: sudomoon-vps, prod-1, hetzner-fra, do-blr
+HOST_NAME=sudomoon-vps
 ```
 
 Set restrictive permissions — this file contains secrets:
