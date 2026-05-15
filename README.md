@@ -55,18 +55,24 @@ celery -A app.worker.celery_app worker --loglevel=info
 | Variable | Default | Description |
 |---|---|---|
 | `DATABASE_URL` | `postgresql+asyncpg://...@localhost:5432/lincoln` | PostgreSQL async connection string |
+| `POSTGRES_USER` | `lincoln` | PostgreSQL container username (Docker / VPS only) |
+| `POSTGRES_PASSWORD` | *(required)* | PostgreSQL container password (Docker / VPS only) — must match `DATABASE_URL` |
+| `POSTGRES_DB` | `lincoln` | PostgreSQL database name (Docker / VPS only) |
 | `UPLOAD_DIR` | `/tmp/lincoln_uploads` | Directory for uploaded files |
 | `MAX_UPLOAD_SIZE_BYTES` | `20971520` | Max upload size (default 20 MB) |
 | `ALLOWED_MIME_TYPES` | `application/pdf,text/csv,...` | Comma-separated accepted MIME types |
-| `ENVIRONMENT` | `development` | Runtime environment label |
 | `REDIS_URL` | `redis://localhost:6379/0` | Redis broker URL for Celery |
 | `JWT_SECRET_KEY` | `change-me-in-production` | Secret for signing JWT tokens — **must be changed** |
 | `JWT_ALGORITHM` | `HS256` | JWT signing algorithm |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | Token TTL in minutes |
 | `ADMIN_EMAIL` | *(empty)* | Default admin user email — created on first boot if set |
 | `ADMIN_PASSWORD` | *(empty)* | Default admin user password |
+| `REGISTRATION_TOKEN` | *(empty)* | If set, `POST /auth/register` requires `X-Registration-Token` header |
+| `ENVIRONMENT` | `development` | Runtime environment label |
+| `HOST_NAME` | `vps` | Label used in Prometheus and Grafana dashboards |
 
-> **Note:** `postgresql://` URLs (e.g. from Render) are automatically rewritten to `postgresql+asyncpg://` at runtime — no manual transformation needed.
+> **Note:** `postgresql://` URLs are automatically rewritten to `postgresql+asyncpg://` at runtime.  
+> `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` are only needed when running the PostgreSQL container via Docker Compose — not required for managed databases (RDS, Render).
 
 ---
 
