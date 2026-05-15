@@ -222,16 +222,22 @@ document.getElementById("tab-nav").addEventListener("click", e => {
 
 // ── Status badge ───────────────────────────────────────────────────────────
 
-function statusBadge(status) {
+function statusBadge(status, errorMessage) {
   const map = {
     done:       { dot: "dot-done",       label: "Done" },
     processing: { dot: "dot-processing", label: "Processing" },
+    pending:    { dot: "dot-processing", label: "Pending" },
     failed:     { dot: "dot-failed",     label: "Failed" },
   };
   const s = map[status] ?? { dot: "dot-processing", label: status };
-  return `<span class="inline-flex items-center gap-1.5">
+
+  const tooltip = status === "failed" && errorMessage
+    ? `<span class="status-tooltip">${errorMessage.replace(/"/g, "&quot;")}</span>`
+    : "";
+
+  return `<span class="inline-flex items-center gap-1.5 relative status-badge-wrap">
     <span class="inline-block h-2 w-2 rounded-full ${s.dot}"></span>
-    <span class="text-gray-600">${s.label}</span>
+    <span class="text-gray-600">${s.label}</span>${tooltip}
   </span>`;
 }
 
@@ -353,7 +359,7 @@ function upsertDocRow(doc) {
   row.innerHTML = `
     <td class="px-5 py-3 font-medium text-gray-800 max-w-xs truncate" title="${doc.original_name}">${doc.original_name}</td>
     <td class="px-5 py-3 text-gray-500">${doc.file_type}</td>
-    <td class="px-5 py-3">${statusBadge(doc.status)}</td>
+    <td class="px-5 py-3">${statusBadge(doc.status, doc.error_message)}</td>
     <td class="px-5 py-3 text-gray-500">${fmt(doc.file_size)}</td>
     <td class="px-5 py-3">
       <button class="text-red-500 hover:text-red-700 text-sm font-medium" data-delete="${doc.id}">Delete</button>
