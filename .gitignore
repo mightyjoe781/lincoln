@@ -1,0 +1,74 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+wheels/
+*.whl
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env.local
+.env.*.local
+
+# Environment / secrets
+.env
+!.env.example
+
+# Hatch / build
+.hatch/
+
+# pytest
+.pytest_cache/
+.cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# mypy / type checkers
+.mypy_cache/
+.dmypy.json
+.pytype/
+.pyre/
+
+# Alembic
+alembic/versions/__pycache__/
+
+# Uploads / local storage
+uploads/
+storage/
+*.pdf
+*.csv
+!test-samples/
+
+# Docker
+.docker/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temp
+.tmp/
+tmp/
