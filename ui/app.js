@@ -117,6 +117,26 @@ function showLoggedIn(email) {
 }
 
 logoutBtn.addEventListener("click", () => {
+  // Stop any in-flight status polls
+  Object.keys(pollTimers).forEach(id => { clearInterval(pollTimers[id]); delete pollTimers[id]; });
+
+  // Clear all table data
+  document.getElementById("docs-tbody").innerHTML = "";
+  document.getElementById("docs-empty").classList.remove("hidden");
+  document.getElementById("inv-tbody").innerHTML = "";
+  document.getElementById("inv-empty").classList.remove("hidden");
+  document.getElementById("inv-pagination").innerHTML = "";
+  document.getElementById("txn-tbody").innerHTML = "";
+  document.getElementById("txn-empty").classList.remove("hidden");
+  document.getElementById("txn-pagination").innerHTML = "";
+
+  // Reset pagination state
+  invPage = 1; invTotal = 0;
+  txnPage = 1; txnTotal = 0;
+
+  // Close detail panel if open
+  closeInvoicePanel();
+
   clearToken();
   authEmailLabel.classList.add("hidden");
   logoutBtn.classList.add("hidden");
