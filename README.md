@@ -241,24 +241,3 @@ docker compose --profile monitoring up
 
 Prometheus UI at http://localhost:9090, Grafana at http://localhost:3000 (admin / admin).
 
----
-
-## Cloud Deployment
-
-### Render (one-click)
-
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
-
-See [`deployment/render.md`](deployment/render.md) for full instructions. The `render.yaml` Blueprint provisions the API, PostgreSQL, and Redis in one step. `JWT_SECRET_KEY` is auto-generated on first deploy.
-
-### VPS / Self-hosted
-
-```bash
-# On the VPS
-git clone <repo> && cd lincoln
-cp .env.example .env  # fill in secrets
-docker compose up -d --build
-```
-
-Point your existing Prometheus instance at `http://<host>:8000/metrics` to scrape metrics into your existing Grafana dashboards.
-
