@@ -39,6 +39,7 @@ function setAuthMode(mode) {
   authTabRegister.className = `auth-mode-btn flex-1 py-1.5 rounded-md text-sm font-medium transition ${!loginActive   ? "bg-white shadow text-blue-700" : "text-gray-500 hover:text-gray-700"}`;
   authSubmit.textContent = loginActive ? "Login" : "Register";
   document.getElementById("auth-password-input").autocomplete = loginActive ? "current-password" : "new-password";
+  document.getElementById("reg-token-field").classList.toggle("hidden", loginActive);
 }
 
 authTabLogin.addEventListener("click", () => setAuthMode("login"));
@@ -64,9 +65,12 @@ async function handleAuth() {
 
   try {
     if (authMode === "register") {
+      const regToken = document.getElementById("auth-reg-token-input").value;
+      const regHeaders = { "Content-Type": "application/json" };
+      if (regToken) regHeaders["X-Registration-Token"] = regToken;
       await fetch(API_BASE + "/auth/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: regHeaders,
         body: JSON.stringify({ email, password }),
       }).then(async r => {
         if (!r.ok) {

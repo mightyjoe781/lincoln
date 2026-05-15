@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     admin_email: str = ""
     admin_password: str = ""
+    registration_token: str = ""  # if set, POST /auth/register requires X-Registration-Token header
 
 
 settings = Settings()
