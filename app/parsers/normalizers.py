@@ -33,11 +33,19 @@ KNOWN_ISO = {
 }
 
 
+_YEAR_FIRST_RE = re.compile(r"^\d{4}[-/]\d{1,2}[-/]\d{1,2}")
+
+
 def parse_date(raw: str | None) -> date | None:
     if not raw or not raw.strip():
         return None
+    s = raw.strip()
     try:
-        return dateutil_parser.parse(raw.strip(), dayfirst=True).date()
+        # ISO / year-first formats (e.g. "2024-07-01") must not use dayfirst
+        # because dateutil with dayfirst=True reorders the month/day tokens.
+        if _YEAR_FIRST_RE.match(s):
+            return dateutil_parser.parse(s, yearfirst=True, dayfirst=False).date()
+        return dateutil_parser.parse(s, dayfirst=True).date()
     except (ValueError, OverflowError):
         return None
 
@@ -52,9 +60,12 @@ def parse_amount(raw: str | None) -> Decimal | None:
     for iso in KNOWN_ISO:
         cleaned = re.sub(rf"\b{iso}\b", "", cleaned, flags=re.IGNORECASE)
     cleaned = cleaned.strip()
-    # Handle European-style numbers: 1.234,56 → 1234.56
+    # European-style with thousand-dot: 1.234,56 → 1234.56
     if re.match(r"^\d{1,3}(\.\d{3})+(,\d+)?$", cleaned):
         cleaned = cleaned.replace(".", "").replace(",", ".")
+    # European-style decimal-comma without thousands: 850,00 → 850.00
+    elif re.match(r"^\d+,\d{1,2}$", cleaned):
+        cleaned = cleaned.replace(",", ".")
     else:
         cleaned = cleaned.replace(",", "")
     try:

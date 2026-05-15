@@ -153,7 +153,7 @@ def invoice_minimal() -> None:
 def invoice_multipage() -> None:
     pdf = FPDF()
     pdf.add_page()
-    header(pdf, "INVOICE — Page 1 of 2")
+    header(pdf, "INVOICE - Page 1 of 2")
 
     kv(pdf, "Vendor:", "GlobalTech Solutions Ltd")
     kv(pdf, "Invoice #:", "GT-2024-0188")
@@ -177,7 +177,7 @@ def invoice_multipage() -> None:
     pdf.cell(0, 6, "Continued on next page...", ln=True, align="R")
 
     pdf.add_page()
-    header(pdf, "INVOICE — Page 2 of 2")
+    header(pdf, "INVOICE - Page 2 of 2")
     kv(pdf, "Vendor:", "GlobalTech Solutions Ltd")
     kv(pdf, "Invoice #:", "GT-2024-0188 (continued)")
     pdf.ln(4)
