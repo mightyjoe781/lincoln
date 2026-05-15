@@ -27,7 +27,31 @@ def get_storage() -> LocalFileStorage:
     return LocalFileStorage(settings.upload_dir)
 
 
-@router.post("/upload", response_model=DocumentBatchUploadResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/upload",
+    response_model=DocumentBatchUploadResponse,
+    status_code=status.HTTP_200_OK,
+    openapi_extra={
+        "requestBody": {
+            "content": {
+                "multipart/form-data": {
+                    "schema": {
+                        "type": "object",
+                        "required": ["files"],
+                        "properties": {
+                            "files": {
+                                "type": "array",
+                                "items": {"type": "string", "format": "binary"},
+                                "description": "One or more PDF invoices or CSV bank statements",
+                            }
+                        },
+                    }
+                }
+            },
+            "required": True,
+        }
+    },
+)
 @limiter.limit("30/minute")
 async def upload_document(
     request: Request,
